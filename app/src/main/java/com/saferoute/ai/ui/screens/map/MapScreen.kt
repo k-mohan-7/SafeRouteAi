@@ -60,10 +60,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.saferoute.ai.BuildConfig
 import com.saferoute.ai.domain.model.Incident
+import com.saferoute.ai.domain.model.PlannedRoute
+import com.saferoute.ai.domain.model.RiskCalculator
 import com.saferoute.ai.ui.components.MapBottomSheetChrome
 import com.saferoute.ai.ui.components.MapDashboardSheetContent
 import com.saferoute.ai.ui.components.OsmMapView
 import com.saferoute.ai.ui.components.ProximityAlertBanner
+import com.saferoute.ai.ui.components.RiskBadge
 import com.saferoute.ai.ui.components.createIncidentMarker
 import com.saferoute.ai.ui.components.drawSegmentedPolyline
 import com.saferoute.ai.ui.components.addRouteEndpointMarkers
@@ -92,8 +95,10 @@ fun MapScreen(
     var showReport by remember { mutableStateOf(false) }
     var showEmergency by remember { mutableStateOf(false) }
     var dashboardTab by remember { mutableIntStateOf(0) }
+    var hasCenteredMap by remember { mutableStateOf(false) }
     val uLat = state.userLat
     val uLng = state.userLng
+    val liveEtaLabel = viewModel.displayEta()
 
     val sheetPeekHeight = 200.dp
     val bottomSheetState = rememberStandardBottomSheetState(
@@ -115,6 +120,14 @@ fun MapScreen(
         state.error?.let {
             snackbar.showSnackbar(it)
             viewModel.clearError()
+        }
+    }
+    LaunchedEffect(uLat, uLng, mapView) {
+        val mv = mapView ?: return@LaunchedEffect
+        if (uLat != null && uLng != null && !hasCenteredMap) {
+            mv.controller.setCenter(GeoPoint(uLat, uLng))
+            mv.controller.setZoom(15.0)
+            hasCenteredMap = true
         }
     }
 
@@ -225,7 +238,6 @@ fun MapScreen(
                     navigationMode = state.navigationMode,
                     activeRoute = state.activeRoute,
                     alternativeRoutes = state.alternativeRoutes,
-                    liveEtaLabel = viewModel.displayEta(),
                     onReportClick = { showReport = true },
                     onEmergencyClick = { showEmergency = true },
                     onStopNavigation = { viewModel.stopNavigation() },
@@ -256,6 +268,17 @@ fun MapScreen(
                     }
                     mv.overlays.add(locationOverlay)
                 }
+            }
+
+            val activeRoute = state.activeRoute
+            if (state.navigationMode && activeRoute != null) {
+                NavigationSummaryCard(
+                    route = activeRoute,
+                    etaLabel = liveEtaLabel,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 10.dp, start = 12.dp, end = 12.dp)
+                )
             }
 
             if (!state.navigationMode) {
@@ -311,7 +334,9 @@ fun MapScreen(
                     incident = alert,
                     distanceText = dist,
                     onDismiss = { viewModel.dismissProximityAlert() },
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 72.dp)
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = if (state.navigationMode) 96.dp else 72.dp)
                 )
             }
         }
@@ -381,5 +406,41 @@ private fun IncidentDetailContent(incident: Incident, userLat: Double?, userLng:
             )
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun NavigationSummaryCard(
+    route: PlannedRoute,
+    etaLabel: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    RiskCalculator.formatDistance(route.distanceMeters),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text("ETA $etaLabel")
+                Text(
+                    "Risk ${route.analysis.riskScore}% — ${RiskCalculator.riskLabel(route.analysis.riskScore)}",
+                    color = RiskCalculator.riskColor(route.analysis.riskScore)
+                )
+            }
+            RiskBadge(route.analysis.riskScore)
+        }
     }
 }

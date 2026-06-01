@@ -27,6 +27,7 @@ fun OsmMapView(
             setTileSource(TileSourceFactory.MAPNIK)
             isTilesScaledToDpi = true
             setMultiTouchControls(true)
+            setUseDataConnection(true)
             zoomController.setVisibility(
                 if (showBuiltInZoomControls) CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT
                 else CustomZoomButtonsController.Visibility.NEVER

@@ -14,13 +14,16 @@ class SafeRouteApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Configuration.getInstance().load(
+            this,
+            PreferenceManager.getDefaultSharedPreferences(this)
+        )
         val basePath = java.io.File(filesDir, "osmdroid").apply { mkdirs() }
         val tileCache = java.io.File(basePath, "tile").apply { mkdirs() }
         Configuration.getInstance().apply {
             osmdroidBasePath = basePath
             osmdroidTileCache = tileCache
-            userAgentValue = "com.saferoute.ai/1.0 (Android; road safety app)"
-            load(this@SafeRouteApp, PreferenceManager.getDefaultSharedPreferences(this@SafeRouteApp))
+            userAgentValue = BuildConfig.APPLICATION_ID
         }
         createNotificationChannels()
     }

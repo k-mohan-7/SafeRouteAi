@@ -1,13 +1,13 @@
 package com.saferoute.ai.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,7 +38,6 @@ fun MapBottomSheetChrome(
     navigationMode: Boolean,
     activeRoute: PlannedRoute?,
     alternativeRoutes: List<PlannedRoute>,
-    liveEtaLabel: String,
     onReportClick: () -> Unit,
     onEmergencyClick: () -> Unit,
     onStopNavigation: () -> Unit,
@@ -53,92 +52,100 @@ fun MapBottomSheetChrome(
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            SpeedometerWidget(speedKmh = speedKmh)
-            Column(horizontalAlignment = Alignment.End) {
-                FloatingActionButton(
-                    onClick = onReportClick,
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Report")
-                }
-                Spacer(Modifier.height(8.dp))
-                if (navigationMode) {
-                    FloatingActionButton(
-                        onClick = onStopNavigation,
-                        containerColor = MaterialTheme.colorScheme.error
-                    ) {
-                        Text("Stop", color = Color.White, style = MaterialTheme.typography.labelMedium)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SpeedometerWidget(speedKmh = speedKmh)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    if (activeRoute != null && !navigationMode) {
+                        Button(
+                            onClick = onStartJourney,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Start Journey")
+                        }
                     }
-                } else {
+                }
+                Column(horizontalAlignment = Alignment.End) {
                     FloatingActionButton(
-                        onClick = onEmergencyClick,
-                        containerColor = Color(0xFFDC2626)
+                        onClick = onReportClick,
+                        containerColor = MaterialTheme.colorScheme.primary
                     ) {
-                        Icon(Icons.Default.Phone, contentDescription = "Emergency", tint = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = "Report")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (navigationMode) {
+                        FloatingActionButton(
+                            onClick = onStopNavigation,
+                            containerColor = MaterialTheme.colorScheme.error
+                        ) {
+                            Text("Stop", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                        }
+                    } else {
+                        FloatingActionButton(
+                            onClick = onEmergencyClick,
+                            containerColor = Color(0xFFDC2626)
+                        ) {
+                            Icon(Icons.Default.Phone, contentDescription = "Emergency", tint = Color.White)
+                        }
                     }
                 }
             }
         }
 
-        activeRoute?.let { route ->
-            Spacer(Modifier.height(8.dp))
-            Card(
-                Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                )
-            ) {
-                Column(Modifier.padding(12.dp)) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                RiskCalculator.formatDistance(route.distanceMeters),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                if (navigationMode) "ETA $liveEtaLabel" else "ETA ${RiskCalculator.formatEta(route.etaSeconds)}"
-                            )
-                            Text(
-                                "Risk ${route.analysis.riskScore}% — ${RiskCalculator.riskLabel(route.analysis.riskScore)}",
-                                color = RiskCalculator.riskColor(route.analysis.riskScore)
-                            )
-                        }
-                        RiskBadge(route.analysis.riskScore)
-                    }
-                    if (!navigationMode && alternativeRoutes.isNotEmpty()) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "Choose a route (lower risk is safer):",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        alternativeRoutes.forEachIndexed { i, alt ->
-                            TextButton(onClick = { onSelectAlternative(i + 1) }) {
+        if (!navigationMode) {
+            activeRoute?.let { route ->
+                Spacer(Modifier.height(10.dp))
+                Card(
+                    Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
                                 Text(
-                                    "Alt ${i + 1}: ${RiskCalculator.formatDistance(alt.distanceMeters)} · " +
-                                        "${RiskCalculator.formatEta(alt.etaSeconds)} · Risk ${alt.analysis.riskScore}%"
+                                    RiskCalculator.formatDistance(route.distanceMeters),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text("ETA ${RiskCalculator.formatEta(route.etaSeconds)}")
+                                Text(
+                                    "Risk ${route.analysis.riskScore}% — ${RiskCalculator.riskLabel(route.analysis.riskScore)}",
+                                    color = RiskCalculator.riskColor(route.analysis.riskScore)
                                 )
                             }
+                            RiskBadge(route.analysis.riskScore)
                         }
-                    }
-                    if (!navigationMode) {
-                        Spacer(Modifier.height(4.dp))
-                        Button(
-                            onClick = onStartJourney,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Start Journey")
+                        if (alternativeRoutes.isNotEmpty()) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "Choose a route (lower risk is safer):",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            alternativeRoutes.forEachIndexed { i, alt ->
+                                TextButton(onClick = { onSelectAlternative(i + 1) }) {
+                                    Text(
+                                        "Alt ${i + 1}: ${RiskCalculator.formatDistance(alt.distanceMeters)} · " +
+                                            "${RiskCalculator.formatEta(alt.etaSeconds)} · Risk ${alt.analysis.riskScore}%"
+                                    )
+                                }
+                            }
                         }
                     }
                 }
