@@ -30,6 +30,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.saferoute.ai.data.local.SessionDataStore
 import com.saferoute.ai.service.LocationStateHolder
 import com.saferoute.ai.ui.screens.auth.LoginScreen
@@ -199,19 +200,49 @@ private fun MainScaffold(
                 NavigationBar {
                     NavigationBarItem(
                         selected = currentRoute == Screen.Map.route,
-                        onClick = { navController.navigate(Screen.Map.route) },
+                        onClick = {
+                            if (currentRoute != Screen.Map.route) {
+                                navController.navigate(Screen.Map.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        },
                         icon = { Icon(Icons.Default.Map, contentDescription = "Map") },
                         label = { Text("Map") }
                     )
                     NavigationBarItem(
                         selected = currentRoute == Screen.Reports.route,
-                        onClick = { navController.navigate(Screen.Reports.route) },
+                        onClick = {
+                            if (currentRoute != Screen.Reports.route) {
+                                navController.navigate(Screen.Reports.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        },
                         icon = { Icon(Icons.Default.List, contentDescription = "Reports") },
                         label = { Text("Reports") }
                     )
                     NavigationBarItem(
                         selected = currentRoute == Screen.Profile.route,
-                        onClick = { navController.navigate(Screen.Profile.route) },
+                        onClick = {
+                            if (currentRoute != Screen.Profile.route) {
+                                navController.navigate(Screen.Profile.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        },
                         icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
                         label = { Text("Profile") }
                     )

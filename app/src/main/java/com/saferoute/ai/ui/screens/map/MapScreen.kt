@@ -109,6 +109,10 @@ fun MapScreen(
         bottomSheetState = bottomSheetState
     )
 
+    LaunchedEffect(state.navigationMode) {
+        bottomSheetState.partialExpand()
+    }
+
     LaunchedEffect(Unit) { viewModel.startPeriodicRefresh() }
     LaunchedEffect(state.userLat, state.userLng) {
         if (state.userLat != null && state.userLng != null) {
@@ -167,7 +171,7 @@ fun MapScreen(
         val mv = mapView ?: return@LaunchedEffect
         mv.overlays.removeAll { it is Marker }
         state.incidents.forEach { incident ->
-            mv.overlays.add(createIncidentMarker(mv, incident) { viewModel.selectIncident(it) })
+            mv.overlays.add(createIncidentMarker(mv, incident, state.incidents) { viewModel.selectIncident(it) })
         }
         state.activeRoute?.let { route ->
             addRouteEndpointMarkers(mv, route.sourceLat, route.sourceLng, route.destLat, route.destLng)
@@ -225,7 +229,7 @@ fun MapScreen(
     BottomSheetScaffold(
         scaffoldState = bottomSheetScaffoldState,
         sheetPeekHeight = sheetPeekHeight,
-        sheetSwipeEnabled = true,
+        sheetSwipeEnabled = !state.navigationMode,
         sheetDragHandle = { BottomSheetDefaults.DragHandle() },
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContainerColor = MaterialTheme.colorScheme.surface,
@@ -244,18 +248,20 @@ fun MapScreen(
                     onStartJourney = { viewModel.startNavigation() },
                     onSelectAlternative = { viewModel.selectRouteOption(it) }
                 )
-                MapDashboardSheetContent(
-                    selectedTab = dashboardTab,
-                    onTabSelected = { dashboardTab = it },
-                    incidents = state.incidents,
-                    myReports = state.myReports,
-                    myRoutes = state.myRoutes,
-                    isLoading = state.isLoadingDashboard,
-                    userLat = uLat,
-                    userLng = uLng,
-                    locationName = state.userLocationName,
-                    onIncidentClick = { viewModel.selectIncident(it) }
-                )
+                if (!state.navigationMode) {
+                    MapDashboardSheetContent(
+                        selectedTab = dashboardTab,
+                        onTabSelected = { dashboardTab = it },
+                        incidents = state.incidents,
+                        myReports = state.myReports,
+                        myRoutes = state.myRoutes,
+                        isLoading = state.isLoadingDashboard,
+                        userLat = uLat,
+                        userLng = uLng,
+                        locationName = state.userLocationName,
+                        onIncidentClick = { viewModel.selectIncident(it) }
+                    )
+                }
             }
         }
     ) { padding ->
